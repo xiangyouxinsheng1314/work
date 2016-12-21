@@ -1,5 +1,10 @@
 package com.myrecyclerview;
 
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +17,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,7 +27,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.myrecyclerview.services.WeatherServices;
+import com.myrecyclerview.services.interfaces.IWeatherService;
+
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,18 +46,53 @@ public class MainActivity extends AppCompatActivity {
      * {@link android.support.v4.app.FragmentStatePagerAdapter}.
      */
     private SectionsPagerAdapter mSectionsPagerAdapter;
-
+    private WeatherReporterManager countService;
+    private WeatherReporter mWeatherReporter;
+    private String mCity;
+    public static String mStartTime;
+    private static String mEndTime;
+    private int mAreaId;
     /**
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        // @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            countService = WeatherReporterManager.Stub.asInterface(service);
+            if (countService != null) {
+                try {
+                    Log.i("xiangkezhu ", "getReporter() start");
+                    countService.getReporter(mAreaId, mStartTime, mEndTime,mWeatherReporter);
+                    Log.i("xiangkezhu ", "mAreaId = " + mAreaId + " mStartTime = " + mStartTime +
+                            " mEndTime = " + mEndTime);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
 
+        }
+
+
+        // @Override
+        public void onServiceDisconnected(ComponentName name) {
+            countService = null;
+        }
+    };
+
+
+    @Override
+    protected void onDestroy() {
+        this.unbindService(serviceConnection);
+        super.onDestroy();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        mAreaId = 101010100;
+        getCurrentTimeAsNumber();
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         // Create the adapter that will return a fragment for each of the three
@@ -64,9 +110,32 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
+
             }
         });
+        Log.i("xiangkezhu", " bindService()");
+        this.bindService(new Intent(this, WeatherServices.class),
+                this.serviceConnection, BIND_AUTO_CREATE);
 
+    }
+    /**
+     * 返回当前日期时间字符串<br>
+     * 默认格式:yyyymmddhhmmss
+     *
+     * @return String 返回当前字符串型日期时间
+     */
+    public static void getCurrentTimeAsNumber() {
+        SimpleDateFormat f = new SimpleDateFormat("yyyyMMddHH");
+        Date date = new Date();
+        mStartTime = f.format(date);
+        date.setHours(date.getHours() +24);
+        mEndTime = f.format(date);
+        Log.i("xiangkezhu ","mStartTime" + mStartTime);
+        Log.i("xiangkezhu ","mEndTime" + mEndTime);
+    }
+    @Override
+    protected void onStop() {
+        super.onStop();
     }
 
     @Override
@@ -125,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
             //TextView textView = (TextView) rootView.findViewById(R.id.section_label);
             //textView.setText(getString(R.string.section_format, getArguments().getInt
-                    //(ARG_SECTION_NUMBER)));
+            //(ARG_SECTION_NUMBER)));
             initData();
             mRecyclerView = (RecyclerView) rootView.findViewById(R.id.my_recycler_view);
             LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext());
@@ -147,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
                 MyViewHolder holder = new MyViewHolder(LayoutInflater.from(getContext()).inflate
-                        (R.layout.item_home, parent,false));
+                        (R.layout.item_home, parent, false));
                 return holder;
             }
 
@@ -155,7 +224,7 @@ public class MainActivity extends AppCompatActivity {
             public void onBindViewHolder(MyViewHolder holder, int position) {
                 holder.tv1.setText(mDatas.get(position));
                 holder.iv.setImageResource(R.drawable.ic_sunny_big);
-                holder.tv2.setText("13" + String.valueOf((char)176));
+                holder.tv2.setText("13" + String.valueOf((char) 176));
             }
 
             @Override

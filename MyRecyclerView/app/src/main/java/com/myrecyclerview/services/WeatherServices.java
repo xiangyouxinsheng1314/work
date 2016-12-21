@@ -3,49 +3,132 @@ package com.myrecyclerview.services;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.res.Configuration;
+import android.os.Binder;
 import android.os.IBinder;
+import android.os.RemoteException;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import com.alibaba.fastjson.JSON;
+import com.myrecyclerview.WeatherReporter;
+import com.myrecyclerview.WeatherReporterManager;
+import com.myrecyclerview.services.interfaces.IWeatherService;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Created by c_qiangs on 16-11-28.
  */
 
 public class WeatherServices extends Service {
-    private static final String WEBSERVICE_URL = "http://www.google.com/ig/api?weather=%s&hl=zh-cn";
+    private static final String WEBSERVICE_URL = "http://v.juhe" +
+            ".cn/xiangji_weather/weather_byHour_areaid.php?";
+    private static final String KEY = "&key=3e40fb2779b7005d8ec4055391a886e9";
+    private String startTime;
+    private String endTime;
+    private int areaid;
+    private String jsonString;
     private static final String TAG = "WeatherServices";
+    private final List<WeatherReporter> weatherReporters = new ArrayList<WeatherReporter>();
+    private int count;
+    private final WeatherReporter mWeatherReporter = null;
+    private ServiceBinder serviceBinder = new ServiceBinder();
+    private boolean threadDisable;
+    private List<WeatherReporter> mWeatherReporters = new ArrayList<>();
+    private final WeatherReporterManager.Stub mWeatherReporterManager = new
+            WeatherReporterManager.Stub() {
+                WeatherReporter weatherReporter2 = null;
+
+                @Override
+                public List<WeatherReporter> getReporters(String city, String time) throws
+                        RemoteException {
+                    Log.i("xiangkezhu ", "getReporters() in service");
+                    return null;
+                }
+
+                @Override
+                public void getReporter(int areaId, String startTime, String endTime,
+                                        WeatherReporter weatherReporter) throws
+                        RemoteException {
+                    Log.i("xiangkezhu ", "getReporter() in service");
+
+                    Log.i("xiangkezhu ", "Service onCreate()");
+                    OkHttpClient client = new OkHttpClient();
+                    Request request = new Request.Builder().url(WEBSERVICE_URL
+                            +"areaid="+areaId +"&startTime="+startTime +"&endTime="+endTime+"&"+KEY)
+                            .build();
+                    Log.i("xiangkezhu ", "request" + request);
+                    /*try {
+                        Response response = client.newCall(request).execute();
+                    }catch (IOException e){
+                        e.printStackTrace();
+                    }*/
+                    client.newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(Call call, IOException e) {
+                            Log.i(TAG, "HTTP FAILED!!!");
+
+                        }
+
+                        @Override
+                        public void onResponse(Call call, Response response) throws IOException {
+                            Log.i("xiangkezhu ", "onResponse" );
+                            if (null != response.cacheResponse()) {
+                                String str = response.cacheResponse().toString();
+                                Log.i(TAG, "cache---" + str);
+                            } else {
+                                jsonString = response.body().string();
+                                Log.i("xiangkezhu ", "jsonString = " + jsonString );
+                                String str = response.networkResponse().toString();
+                                weatherReporter2 = JSON.parseObject
+                                        (jsonString,
+                                        WeatherReporter
+                                        .class);
+                                Log.i(TAG, "network---" + str);
+
+                            }
+
+                        }
+                    });
+                    weatherReporter = weatherReporter2;
+                }
+
+            };
 
     @Override
     public void onCreate() {
         super.onCreate();
-        HttpClient httpClient = new DefaultHttpClient();
-        HttpGet request = new HttpGet(String.format(WEBSERVICE_URL));
-        try {
-            Log.d(TAG, "get google's weather infomation");
-            HttpResponse response = client.execute(request);
 
-            StatusLine status = response.getStatusLine();
-            Log.d(TAG, "Request returned status " + status);
+        /*new Thread(new Runnable() {
+            // @Override
+            public void run() {
+                while (!threadDisable) {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                    }
+                    count++;
+                    if (count == 100){
+                        threadDisable = true;
+                    }
+                    System.out.println("CountService Count is " + count);
+                }
+            }
+        }).start();*/
+    }
 
-            HttpEntity entity = response.getEntity();
-            responseReader = new InputStreamReader(entity.getContent(), "GB2312");
-
-        } catch (IOException e) {
-
+    public class ServiceBinder extends Binder implements IWeatherService {
+        // @Override
+        public int getCount() {
+            return count;
         }
     }
 
@@ -57,46 +140,15 @@ public class WeatherServices extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-    }
-
-    @Override
-    public void onConfigurationChanged(Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-    }
-
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-    }
-
-    @Override
-    public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
+        this.threadDisable = true;
+        Log.v(" CountService ", " on destroy ");
     }
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
-    }
+        Log.i("xiangkezhu ", "onBind()");
 
-    @Override
-    public boolean onUnbind(Intent intent) {
-        return super.onUnbind(intent);
-    }
-
-    @Override
-    public void onRebind(Intent intent) {
-        super.onRebind(intent);
-    }
-
-    @Override
-    public void onTaskRemoved(Intent rootIntent) {
-        super.onTaskRemoved(rootIntent);
-    }
-
-    @Override
-    protected void dump(FileDescriptor fd, PrintWriter writer, String[] args) {
-        super.dump(fd, writer, args);
+        return mWeatherReporterManager;
     }
 }
