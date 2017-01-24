@@ -1,0 +1,181 @@
+/*
+ * This file is auto-generated.  DO NOT MODIFY.
+ * Original file: /home/c_qiangs/Work/xiangkezhu/MyRecyclerView/app/src/main/aidl/com
+ * /myrecyclerview/WeatherReporterManager.aidl
+ */
+package com.myrecyclerview;
+// Declare any non-default types here with import statements
+
+import android.util.Log;
+
+public interface WeatherReporterManager extends android.os.IInterface {
+    /**
+     * Local-side IPC implementation stub class.
+     */
+    public static abstract class Stub extends android.os.Binder implements WeatherReporterManager {
+        private static final String DESCRIPTOR = "com.myrecyclerview" +
+                ".WeatherReporterManager";
+
+        /**
+         * Construct the stub at attach it to the interface.
+         */
+        public Stub() {
+            Log.i("xiangkezhu ", "Stub()");
+            this.attachInterface(this, DESCRIPTOR);
+        }
+
+        /**
+         * Cast an IBinder object into an com.myrecyclerview.WeatherReporterManager interface,
+         * generating a proxy if needed.
+         */
+        public static WeatherReporterManager asInterface(android.os.IBinder
+                                                                 obj) {
+            Log.i("xiangkezhu ", "asInterface()");
+            if ((obj == null)) {
+                return null;
+            }
+            android.os.IInterface iin = obj.queryLocalInterface(DESCRIPTOR);
+            if (((iin != null) && (iin instanceof WeatherReporterManager))) {
+                Log.i("xiangkezhu ", "(iin != null) && (iin instanceof WeatherReporterManager)");
+                return ((WeatherReporterManager) iin);
+            }
+            return new Proxy(obj);
+        }
+
+        @Override
+        public android.os.IBinder asBinder() {
+            Log.i("xiangkezhu ", "asBinder() in stub");
+            return this;
+        }
+
+        @Override
+        public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int
+                flags) throws android.os.RemoteException {
+            switch (code) {
+                case INTERFACE_TRANSACTION: {
+                    Log.i("xiangkezhu ", "INTERFACE_TRANSACTION");
+                    reply.writeString(DESCRIPTOR);
+                    return true;
+                }
+                case TRANSACTION_getReporters: {
+                    Log.i("xiangkezhu ", "TRANSACTION_getReporters");
+                    data.enforceInterface(DESCRIPTOR);
+                    String _arg0;
+                    _arg0 = data.readString();
+                    java.util.List<String> _arg1;
+                    _arg1 = new java.util.ArrayList<String>();
+                    java.util.List<WeatherReporter> _result = this
+                            .getReporters(_arg0, _arg1);
+                    reply.writeNoException();
+                    reply.writeTypedList(_result);
+                    reply.writeStringList(_arg1);
+                    return true;
+                }
+                case TRANSACTION_getReporter: {
+                    Log.i("xiangkezhu ", "TRANSACTION_getReporter");
+                    data.enforceInterface(DESCRIPTOR);
+                    int _arg0;
+                    _arg0 = data.readInt();
+                    String _arg1;
+                    _arg1 = data.readString();
+                    String _arg2;
+                    _arg2 = data.readString();
+                    WeatherReporter _arg3;
+                    _arg3 = new WeatherReporter();
+                    this.getReporter(_arg0, _arg1, _arg2, _arg3);
+                    reply.writeNoException();
+                    if ((_arg3 != null)) {
+                        reply.writeInt(1);
+                        _arg3.writeToParcel(reply, android.os.Parcelable
+                                .PARCELABLE_WRITE_RETURN_VALUE);
+                    } else {
+                        reply.writeInt(0);
+                    }
+                    return true;
+                }
+            }
+            return super.onTransact(code, data, reply, flags);
+        }
+
+        private static class Proxy implements WeatherReporterManager {
+            private android.os.IBinder mRemote;
+
+            Proxy(android.os.IBinder remote) {
+                mRemote = remote;
+                Log.i("xiangkezhu ", "Proxy()");
+            }
+
+            @Override
+            public android.os.IBinder asBinder() {
+                Log.i("xiangkezhu ", "asBinder()");
+                return mRemote;
+            }
+
+            public String getInterfaceDescriptor() {
+                Log.i("xiangkezhu ", "getInterfaceDescriptor()");
+                return DESCRIPTOR;
+            }
+
+            /**
+             * Demonstrates some basic types that you can use as parameters
+             * and return values in AIDL.
+             */
+            @Override
+            public java.util.List<WeatherReporter> getReporters(String city, java.util
+                    .List<String> time) throws android.os.RemoteException {
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                java.util.List<WeatherReporter> _result;
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    _data.writeString(city);
+
+                    mRemote.transact(Stub.TRANSACTION_getReporters, _data, _reply, 0);
+                    _reply.readException();
+                    _result = _reply.createTypedArrayList(WeatherReporter.CREATOR);
+                    _reply.readStringList(time);
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+                return _result;
+            }
+
+            @Override
+            public void getReporter(int areaId, String startTime, String endTime, WeatherReporter
+                    weatherReporter) throws android.os.RemoteException {
+                Log.i("xiangkezhu ", "getReporter() in proxy");
+                android.os.Parcel _data = android.os.Parcel.obtain();
+                android.os.Parcel _reply = android.os.Parcel.obtain();
+                try {
+                    _data.writeInterfaceToken(DESCRIPTOR);
+                    _data.writeInt(areaId);
+                    _data.writeString(startTime);
+                    _data.writeString(endTime);
+                    Log.i("xiangkezhu ", "mRemote.transact()");
+                    mRemote.transact(Stub.TRANSACTION_getReporter, _data, _reply, 0);
+                    _reply.readException();
+                    if ((0 != _reply.readInt())) {
+                        weatherReporter.readFromParcel(_reply);
+                    }
+                } finally {
+                    _reply.recycle();
+                    _data.recycle();
+                }
+            }
+        }
+
+        static final int TRANSACTION_getReporters = (android.os.IBinder.FIRST_CALL_TRANSACTION + 0);
+        static final int TRANSACTION_getReporter = (android.os.IBinder.FIRST_CALL_TRANSACTION + 1);
+    }
+
+    /**
+     * Demonstrates some basic types that you can use as parameters
+     * and return values in AIDL.
+     */
+    public java.util.List<WeatherReporter> getReporters(String city, java.util.List<String> time)
+            throws android.os.RemoteException;
+
+    public void getReporter(int areaId, String startTime, String endTime, WeatherReporter
+            weatherReporter) throws android.os.RemoteException;
+}
